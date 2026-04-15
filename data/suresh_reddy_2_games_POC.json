@@ -1,0 +1,330 @@
+{
+  "match_id": "suresh_reddy_2_games_POC",
+  "fps": 60,
+  "total_frames": 9302,
+  "duration_sec": 155.0,
+  "shots": {
+    "total_hits": 23,
+    "counts": {
+      "serve": 8,
+      "backhand": 7,
+      "unknown": 4,
+      "forehand": 4
+    },
+    "distribution_pct": {
+      "serve": 34.8,
+      "backhand": 30.4,
+      "unknown": 17.4,
+      "forehand": 17.4
+    },
+    "fh_bh_ratio": 0.57,
+    "serve_count": 8
+  },
+  "placement": {
+    "zone_counts": {
+      "1": 8,
+      "2": 4,
+      "3": 6,
+      "4": 2
+    },
+    "zone_pct": {
+      "1": 40.0,
+      "2": 20.0,
+      "3": 30.0,
+      "4": 10.0
+    },
+    "deep_vs_short": {
+      "deep": 12,
+      "short": 8
+    },
+    "left_vs_right": {
+      "left": 14,
+      "right": 6
+    },
+    "total_bounces_detected": 20
+  },
+  "rallies": {
+    "rally_count": 9,
+    "avg_shots_per_rally": 2.6,
+    "max_rally_length": 7,
+    "avg_rally_duration_sec": 4.9,
+    "rally_lengths": [
+      1,
+      7,
+      3,
+      2,
+      1,
+      2,
+      3,
+      2,
+      2
+    ]
+  },
+  "timing": {
+    "avg_hit_to_bounce_sec": 1.2,
+    "min_hit_to_bounce_sec": 0.43,
+    "serve_flight_times": [],
+    "avg_serve_flight_sec": 0
+  },
+  "movement": {
+    "hit_positions": [
+      {
+        "cx": 510.9,
+        "cy": 2295.4,
+        "shot": "serve"
+      },
+      {
+        "cx": 475.4,
+        "cy": 2399.2,
+        "shot": "backhand"
+      },
+      {
+        "cx": 357.2,
+        "cy": 2485.9,
+        "shot": "unknown"
+      },
+      {
+        "cx": 357.7,
+        "cy": 2406.7,
+        "shot": "unknown"
+      },
+      {
+        "cx": 438.7,
+        "cy": 2468.2,
+        "shot": "unknown"
+      },
+      {
+        "cx": 144.4,
+        "cy": 2448.2,
+        "shot": "forehand"
+      },
+      {
+        "cx": 205.1,
+        "cy": 2441.6,
+        "shot": "forehand"
+      },
+      {
+        "cx": 85.4,
+        "cy": 2320.3,
+        "shot": "unknown"
+      },
+      {
+        "cx": 232.5,
+        "cy": 2294.8,
+        "shot": "serve"
+      },
+      {
+        "cx": 193.8,
+        "cy": 2390.3,
+        "shot": "backhand"
+      },
+      {
+        "cx": 229.8,
+        "cy": 2360.0,
+        "shot": "serve"
+      },
+      {
+        "cx": 226.0,
+        "cy": 2372.8,
+        "shot": "backhand"
+      },
+      {
+        "cx": 530.9,
+        "cy": 2357.1,
+        "shot": "serve"
+      },
+      {
+        "cx": 536.4,
+        "cy": 2373.1,
+        "shot": "serve"
+      },
+      {
+        "cx": 505.5,
+        "cy": 2496.5,
+        "shot": "backhand"
+      },
+      {
+        "cx": 210.6,
+        "cy": 2337.0,
+        "shot": "serve"
+      },
+      {
+        "cx": 83.4,
+        "cy": 2289.4,
+        "shot": "backhand"
+      },
+      {
+        "cx": 638.2,
+        "cy": 2445.2,
+        "shot": "forehand"
+      },
+      {
+        "cx": 482.1,
+        "cy": 2405.6,
+        "shot": "serve"
+      },
+      {
+        "cx": 463.9,
+        "cy": 2282.5,
+        "shot": "backhand"
+      },
+      {
+        "cx": 489.7,
+        "cy": 2393.3,
+        "shot": "backhand"
+      },
+      {
+        "cx": 455.3,
+        "cy": 2416.3,
+        "shot": "forehand"
+      }
+    ],
+    "recovery_positions": [
+      {
+        "cx": 537.3,
+        "cy": 2262.0
+      },
+      {
+        "cx": 496.1,
+        "cy": 2373.7
+      },
+      {
+        "cx": 369.7,
+        "cy": 2482.0
+      },
+      {
+        "cx": 365.2,
+        "cy": 2370.6
+      },
+      {
+        "cx": 438.8,
+        "cy": 2452.2
+      },
+      {
+        "cx": 123.5,
+        "cy": 2453.3
+      },
+      {
+        "cx": 228.3,
+        "cy": 2413.6
+      },
+      {
+        "cx": 92.4,
+        "cy": 2319.3
+      },
+      {
+        "cx": 259.8,
+        "cy": 2276.5
+      },
+      {
+        "cx": 187.9,
+        "cy": 2394.2
+      },
+      {
+        "cx": 250.7,
+        "cy": 2393.8
+      },
+      {
+        "cx": 238.4,
+        "cy": 2320.9
+      },
+      {
+        "cx": 555.6,
+        "cy": 2353.4
+      },
+      {
+        "cx": 549.0,
+        "cy": 2383.7
+      },
+      {
+        "cx": 509.8,
+        "cy": 2503.1
+      },
+      {
+        "cx": 240.4,
+        "cy": 2353.4
+      },
+      {
+        "cx": 60.5,
+        "cy": 2279.1
+      },
+      {
+        "cx": 719.7,
+        "cy": 2485.6
+      },
+      {
+        "cx": 503.1,
+        "cy": 2362.0
+      },
+      {
+        "cx": 432.5,
+        "cy": 2283.2
+      },
+      {
+        "cx": 505.0,
+        "cy": 2339.9
+      },
+      {
+        "cx": 451.3,
+        "cy": 2410.4
+      }
+    ],
+    "zone_at_hit": {
+      "5": 11,
+      "6": 11
+    },
+    "court_coverage": {
+      "x_range": 554.8,
+      "y_range": 214.0,
+      "x_center": 357.0,
+      "y_center": 2385.4
+    }
+  },
+  "swing": {
+    "avg_swing_speed_by_type": {
+      "serve": 75.2,
+      "backhand": 51.2,
+      "unknown": 21.4,
+      "forehand": 39.9
+    },
+    "max_swing_speed_by_type": {
+      "serve": 90.3,
+      "backhand": 103.4,
+      "unknown": 33.0,
+      "forehand": 68.5
+    },
+    "all_speeds": {
+      "serve": [
+        90.3,
+        78.4,
+        68.1,
+        78.8,
+        67.7,
+        48.8,
+        88.7,
+        80.6
+      ],
+      "backhand": [
+        103.4,
+        19.7,
+        28.8,
+        69.2,
+        37.6,
+        19.1,
+        80.4
+      ],
+      "unknown": [
+        10.1,
+        28.4,
+        14.1,
+        33.0
+      ],
+      "forehand": [
+        68.5,
+        5.4,
+        33.1,
+        52.7
+      ]
+    }
+  }
+}

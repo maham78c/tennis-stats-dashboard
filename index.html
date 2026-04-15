@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tennis Match Analysis</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0"></script>
+    <style>
+        * { margin:0; padding:0; box-sizing:border-box; }
+        body { font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif; background:#0f1117; color:#e0e0e0; min-height:100vh; }
+
+        /* Header */
+        .header { background:#1a1d2e; padding:16px 20px; border-bottom:1px solid #2a2d3e; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; position:sticky; top:0; z-index:100; }
+        .header h1 { font-size:18px; color:#fff; }
+        .header select { background:#2a2d3e; color:#e0e0e0; border:1px solid #3a3d4e; padding:8px 12px; border-radius:6px; font-size:13px; min-width:200px; }
+
+        /* Match Info */
+        .match-info { display:flex; gap:10px; padding:12px 20px; background:#151722; border-bottom:1px solid #2a2d3e; flex-wrap:wrap; }
+        .chip { background:#1e2235; padding:5px 12px; border-radius:16px; font-size:12px; color:#aab; }
+        .chip b { color:#f97316; }
+
+        /* Big Stats */
+        .big-stats { display:grid; grid-template-columns:repeat(4,1fr); gap:12px; padding:16px 20px; }
+        @media(max-width:600px) { .big-stats { grid-template-columns:repeat(2,1fr); } }
+        .big-stat { text-align:center; background:#1a1d2e; border-radius:10px; padding:14px 8px; border:1px solid #2a2d3e; }
+        .big-stat .n { font-size:26px; font-weight:700; color:#f97316; }
+        .big-stat .l { font-size:11px; color:#666; margin-top:3px; }
+
+        /* Grid */
+        .grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(320px,1fr)); gap:16px; padding:16px 20px; }
+        @media(max-width:400px) { .grid { grid-template-columns:1fr; } }
+        .card { background:#1a1d2e; border-radius:10px; padding:16px; border:1px solid #2a2d3e; }
+        .card h3 { font-size:13px; color:#8b8fa3; margin-bottom:12px; text-transform:uppercase; letter-spacing:.8px; }
+
+        /* Stats */
+        .sr { display:flex; justify-content:space-between; padding:6px 0; border-bottom:1px solid #1f2235; font-size:13px; }
+        .sr:last-child { border:none; }
+        .sl { color:#8b8fa3; }
+        .sv { color:#fff; font-weight:600; }
+        .sv.o { color:#f97316; } .sv.g { color:#22c55e; } .sv.b { color:#3b82f6; } .sv.c { color:#06b6d4; }
+
+        /* Zone Heatmap */
+        .zones { display:grid; grid-template-columns:1fr 1fr; gap:4px; max-width:200px; margin:0 auto 12px; }
+        .zone { text-align:center; padding:14px 8px; border-radius:6px; }
+        .zone .v { font-size:20px; font-weight:700; display:block; }
+        .zone .zl { font-size:10px; color:#888; }
+
+        /* Chart */
+        .ch { position:relative; height:220px; margin-top:8px; }
+        @media(max-width:400px) { .ch { height:180px; } }
+
+        /* Loading */
+        .loading { text-align:center; padding:60px 20px; color:#666; font-size:16px; }
+
+        /* Footer */
+        .footer { text-align:center; padding:20px; color:#444; font-size:11px; border-top:1px solid #1a1d2e; margin-top:20px; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Tennis Match Analysis</h1>
+        <select id="sel" onchange="loadMatch(this.value)">
+            <option value="">Select match...</option>
+        </select>
+    </div>
+    <div id="app"><div class="loading">Loading matches...</div></div>
+    <div class="footer">Tennis Stats Dashboard | Generated from detection pipeline</div>
+
+<script>
+let S = null; // current stats
+let charts = []; // track chart instances for cleanup
+
+async function init() {
+    try {
+        const r = await fetch('data/matches.json');
+        const d = await r.json();
+        const sel = document.getElementById('sel');
+        d.matches.forEach(m => {
+            const o = document.createElement('option');
+            o.value = m.file;
+            o.textContent = `${m.name} (${m.date})`;
+            sel.appendChild(o);
+        });
+        if (d.matches.length === 1) {
+            sel.value = d.matches[0].file;
+            loadMatch(d.matches[0].file);
+        } else {
+            document.getElementById('app').innerHTML = '<div class="loading">Select a match above</div>';
+        }
+    } catch(e) {
+        document.getElementById('app').innerHTML = '<div class="loading">Error loading matches.json</div>';
+    }
+}
+
+async function loadMatch(file) {
+    if (!file) return;
+    document.getElementById('app').innerHTML = '<div class="loading">Loading...</div>';
+    // Destroy old charts
+    charts.forEach(c => c.destroy());
+    charts = [];
+    try {
+        const r = await fetch(file);
+        S = await r.json();
+        render();
+    } catch(e) {
+        document.getElementById('app').innerHTML = `<div class="loading">Error loading ${file}</div>`;
+    }
+}
+
+function render() {
+    const s = S.shots, r = S.rallies, t = S.timing, mv = S.movement, sw = S.swing, pl = S.placement;
+    let h = '';
+
+    // Match info
+    h += `<div class="match-info">
+        <div class="chip">Match: <b>${S.match_id}</b></div>
+        <div class="chip">Duration: <b>${S.duration_sec}s</b></div>
+        <div class="chip">FPS: <b>${S.fps}</b></div>
+    </div>`;
+
+    // Big stats
+    h += `<div class="big-stats">
+        <div class="big-stat"><div class="n">${s.total_hits}</div><div class="l">Total Hits</div></div>
+        <div class="big-stat"><div class="n">${s.serve_count}</div><div class="l">Serves</div></div>
+        <div class="big-stat"><div class="n">${r.rally_count}</div><div class="l">Rallies</div></div>
+        <div class="big-stat"><div class="n">${pl.total_bounces_detected}</div><div class="l">Bounces</div></div>
+    </div>`;
+
+    h += '<div class="grid">';
+
+    // Shot Distribution
+    h += `<div class="card"><h3>Shot Distribution</h3><div class="ch"><canvas id="c1"></canvas></div></div>`;
+
+    // Shot Breakdown
+    h += `<div class="card"><h3>Shot Breakdown</h3>`;
+    Object.entries(s.counts).forEach(([k,v]) => {
+        h += `<div class="sr"><span class="sl">${k}</span><span class="sv">${v} <small style="color:#666">(${s.distribution_pct[k]||0}%)</small></span></div>`;
+    });
+    h += `<div class="sr"><span class="sl">FH/BH Ratio</span><span class="sv o">${s.fh_bh_ratio}</span></div></div>`;
+
+    // Bounce Zones
+    const zc = pl.zone_counts, mx = Math.max(...Object.values(zc),1);
+    h += `<div class="card"><h3>Bounce Placement</h3><div class="zones">`;
+    [1,2,3,4].forEach(z => {
+        const a = Math.round((zc[z]||0)/mx*200);
+        h += `<div class="zone" style="background:rgba(249,115,22,${a/255})"><span class="v">${zc[z]||0}</span><span class="zl">Zone ${z}</span></div>`;
+    });
+    h += `</div>
+        <div class="sr"><span class="sl">Deep (Z1-2)</span><span class="sv g">${pl.deep_vs_short.deep}</span></div>
+        <div class="sr"><span class="sl">Short (Z3-4)</span><span class="sv b">${pl.deep_vs_short.short}</span></div>
+        <div class="sr"><span class="sl">Left</span><span class="sv">${pl.left_vs_right.left}</span></div>
+        <div class="sr"><span class="sl">Right</span><span class="sv">${pl.left_vs_right.right}</span></div>
+    </div>`;
+
+    // Rally Stats
+    h += `<div class="card"><h3>Rally Stats</h3>
+        <div class="sr"><span class="sl">Rallies</span><span class="sv o">${r.rally_count}</span></div>
+        <div class="sr"><span class="sl">Avg Shots/Rally</span><span class="sv">${r.avg_shots_per_rally}</span></div>
+        <div class="sr"><span class="sl">Longest Rally</span><span class="sv g">${r.max_rally_length} shots</span></div>
+        <div class="sr"><span class="sl">Avg Duration</span><span class="sv">${r.avg_rally_duration_sec}s</span></div>
+        <div class="ch" style="height:160px"><canvas id="c2"></canvas></div>
+    </div>`;
+
+    // Timing
+    h += `<div class="card"><h3>Timing</h3>
+        <div class="sr"><span class="sl">Avg Hit→Bounce</span><span class="sv o">${t.avg_hit_to_bounce_sec}s</span></div>
+        <div class="sr"><span class="sl">Fastest</span><span class="sv g">${t.min_hit_to_bounce_sec}s</span></div>
+        <div class="sr"><span class="sl">Avg Serve Flight</span><span class="sv c">${t.avg_serve_flight_sec}s</span></div>
+    </div>`;
+
+    // Swing Speed
+    h += `<div class="card"><h3>Swing Speed</h3><div class="ch"><canvas id="c3"></canvas></div></div>`;
+
+    // Movement
+    h += `<div class="card"><h3>Court Movement</h3>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px;text-align:center">
+            <div><div style="font-size:22px;font-weight:700;color:#f97316">${mv.zone_at_hit['5']||0}</div><div class="sl">Left (Z5)</div></div>
+            <div><div style="font-size:22px;font-weight:700;color:#3b82f6">${mv.zone_at_hit['6']||0}</div><div class="sl">Right (Z6)</div></div>
+        </div>
+        ${mv.court_coverage.x_range?`
+        <div class="sr"><span class="sl">X Coverage</span><span class="sv">${mv.court_coverage.x_range}cm</span></div>
+        <div class="sr"><span class="sl">Y Coverage</span><span class="sv">${mv.court_coverage.y_range}cm</span></div>`:''}
+    </div>`;
+
+    // Player Position
+    h += `<div class="card"><h3>Player Position at Hit</h3><div class="ch" style="height:260px"><canvas id="c4"></canvas></div></div>`;
+
+    h += '</div>';
+    document.getElementById('app').innerHTML = h;
+
+    // Charts
+    const clr = {forehand:'#f97316',backhand:'#3b82f6',serve:'#22c55e',overhead:'#ef4444',unknown:'#6b7280'};
+
+    // C1: Doughnut
+    charts.push(new Chart('c1',{type:'doughnut',data:{labels:Object.keys(s.counts),datasets:[{data:Object.values(s.counts),backgroundColor:Object.keys(s.counts).map(k=>clr[k]||'#666'),borderWidth:0}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{color:'#aaa',font:{size:11}}}}}}));
+
+    // C2: Rally bar
+    if(r.rally_lengths){charts.push(new Chart('c2',{type:'bar',data:{labels:r.rally_lengths.map((_,i)=>`R${i+1}`),datasets:[{data:r.rally_lengths,backgroundColor:'#f97316',borderRadius:4}]},options:{responsive:true,maintainAspectRatio:false,scales:{y:{ticks:{color:'#555'},grid:{color:'#1a1d2e'}},x:{ticks:{color:'#555'},grid:{display:false}}},plugins:{legend:{display:false}}}}));}
+
+    // C3: Swing bar
+    const st2=Object.keys(sw.avg_swing_speed_by_type);
+    charts.push(new Chart('c3',{type:'bar',data:{labels:st2,datasets:[{label:'Avg',data:st2.map(t2=>sw.avg_swing_speed_by_type[t2]),backgroundColor:'#3b82f6',borderRadius:4},{label:'Max',data:st2.map(t2=>sw.max_swing_speed_by_type[t2]),backgroundColor:'#f97316',borderRadius:4}]},options:{responsive:true,maintainAspectRatio:false,scales:{y:{ticks:{color:'#555'},grid:{color:'#1a1d2e'},title:{display:true,text:'px/frame',color:'#555'}},x:{ticks:{color:'#555'},grid:{display:false}}},plugins:{legend:{labels:{color:'#aaa'}}}}}));
+
+    // C4: Position scatter
+    if(mv.hit_positions){
+        const bt={};
+        mv.hit_positions.forEach(p=>{if(!bt[p.shot])bt[p.shot]=[];bt[p.shot].push({x:p.cx,y:p.cy})});
+        const ds=Object.entries(bt).map(([k,v])=>({label:k,data:v,backgroundColor:clr[k]||'#666',pointRadius:6}));
+        if(mv.recovery_positions.length)ds.push({label:'Recovery',data:mv.recovery_positions.map(p=>({x:p.cx,y:p.cy})),backgroundColor:'#22c55e33',pointRadius:4});
+        charts.push(new Chart('c4',{type:'scatter',data:{datasets:ds},options:{responsive:true,maintainAspectRatio:false,scales:{x:{min:0,max:823,ticks:{color:'#555'},grid:{color:'#1a1d2e'}},y:{min:1188,max:2777,ticks:{color:'#555'},grid:{color:'#1a1d2e'}}},plugins:{legend:{labels:{color:'#aaa'}}}}}));
+    }
+}
+
+init();
+</script>
+</body>
+</html>
