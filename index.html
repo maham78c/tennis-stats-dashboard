@@ -9,116 +9,131 @@
         * { margin:0; padding:0; box-sizing:border-box; }
         body { font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif; background:#0f1117; color:#e0e0e0; min-height:100vh; }
 
-        /* Header */
         .header { background:#1a1d2e; padding:16px 20px; border-bottom:1px solid #2a2d3e; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; position:sticky; top:0; z-index:100; }
         .header h1 { font-size:18px; color:#fff; }
         .header select { background:#2a2d3e; color:#e0e0e0; border:1px solid #3a3d4e; padding:8px 12px; border-radius:6px; font-size:13px; min-width:200px; }
 
-        /* Match Info */
         .match-info { display:flex; gap:10px; padding:12px 20px; background:#151722; border-bottom:1px solid #2a2d3e; flex-wrap:wrap; }
         .chip { background:#1e2235; padding:5px 12px; border-radius:16px; font-size:12px; color:#aab; }
         .chip b { color:#f97316; }
 
-        /* Big Stats */
         .big-stats { display:grid; grid-template-columns:repeat(4,1fr); gap:12px; padding:16px 20px; }
         @media(max-width:600px) { .big-stats { grid-template-columns:repeat(2,1fr); } }
         .big-stat { text-align:center; background:#1a1d2e; border-radius:10px; padding:14px 8px; border:1px solid #2a2d3e; }
         .big-stat .n { font-size:26px; font-weight:700; color:#f97316; }
         .big-stat .l { font-size:11px; color:#666; margin-top:3px; }
 
-        /* Grid */
-        .grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(320px,1fr)); gap:16px; padding:16px 20px; }
+        .section { padding:0 20px 16px; }
+        .section-head { font-size:13px; font-weight:700; color:#555; letter-spacing:1.5px; text-transform:uppercase; padding:18px 20px 6px; border-top:1px solid #1a1d2e; margin-top:8px; }
+        .grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(280px,1fr)); gap:14px; }
         @media(max-width:400px) { .grid { grid-template-columns:1fr; } }
         .card { background:#1a1d2e; border-radius:10px; padding:16px; border:1px solid #2a2d3e; }
-        .card h3 { font-size:13px; color:#8b8fa3; margin-bottom:12px; text-transform:uppercase; letter-spacing:.8px; }
+        .card h3 { font-size:12px; color:#8b8fa3; margin-bottom:10px; text-transform:uppercase; letter-spacing:.8px; }
 
-        /* Stats */
-        .sr { display:flex; justify-content:space-between; padding:6px 0; border-bottom:1px solid #1f2235; font-size:13px; }
+        .sr { display:flex; justify-content:space-between; padding:5px 0; border-bottom:1px solid #1f2235; font-size:13px; }
         .sr:last-child { border:none; }
         .sl { color:#8b8fa3; }
         .sv { color:#fff; font-weight:600; }
         .sv.o { color:#f97316; } .sv.g { color:#22c55e; } .sv.b { color:#3b82f6; } .sv.c { color:#06b6d4; }
 
-        /* Zone Heatmap */
-        .zones { display:grid; grid-template-columns:1fr 1fr; gap:4px; max-width:200px; margin:0 auto 12px; }
-        .zone { text-align:center; padding:14px 8px; border-radius:6px; }
-        .zone .v { font-size:20px; font-weight:700; display:block; }
-        .zone .zl { font-size:10px; color:#888; }
+        .court-wrap { display:flex; justify-content:center; }
+        .court-wrap svg { max-width:100%; height:auto; }
+        .legend-row { display:flex; gap:14px; justify-content:center; font-size:11px; color:#aab; margin:6px 0; }
+        .legend-dot { display:inline-block; width:10px; height:10px; border-radius:50%; margin-right:4px; vertical-align:middle; }
 
-        /* Chart */
-        .ch { position:relative; height:220px; margin-top:8px; }
-        @media(max-width:400px) { .ch { height:180px; } }
-
-        /* Loading */
         .loading { text-align:center; padding:60px 20px; color:#666; font-size:16px; }
-
-        /* Footer */
         .footer { text-align:center; padding:20px; color:#444; font-size:11px; border-top:1px solid #1a1d2e; margin-top:20px; }
     </style>
 </head>
 <body>
     <div class="header">
         <h1>Tennis Match Analysis</h1>
-        <select id="sel" onchange="loadMatch(this.value)">
-            <option value="">Select match...</option>
-        </select>
+        <select id="sel" onchange="loadMatch(this.value)"><option value="">Select match...</option></select>
     </div>
     <div id="app"><div class="loading">Loading matches...</div></div>
     <div class="footer">Tennis Stats Dashboard | Generated from detection pipeline</div>
 
 <script>
-let S = null; // current stats
-let charts = []; // track chart instances for cleanup
+let S = null;
+let charts = [];
+const CM2FT = 1/30.48;
+const CLR = {forehand:'#f97316',backhand:'#3b82f6',serve:'#22c55e',overhead:'#ef4444',unknown:'#6b7280'};
+const CC_CLR = '#f97316', DTL_CLR = '#3b82f6';
 
 async function init() {
     try {
-        const r = await fetch('data/matches.json');
-        const d = await r.json();
+        const r = await fetch('data/matches.json'); const d = await r.json();
         const sel = document.getElementById('sel');
-        d.matches.forEach(m => {
-            const o = document.createElement('option');
-            o.value = m.file;
-            o.textContent = `${m.name} (${m.date})`;
-            sel.appendChild(o);
-        });
-        if (d.matches.length === 1) {
-            sel.value = d.matches[0].file;
-            loadMatch(d.matches[0].file);
-        } else {
-            document.getElementById('app').innerHTML = '<div class="loading">Select a match above</div>';
-        }
-    } catch(e) {
-        document.getElementById('app').innerHTML = '<div class="loading">Error loading matches.json</div>';
-    }
+        d.matches.forEach(m => { const o=document.createElement('option'); o.value=m.file; o.textContent=`${m.name} (${m.date})`; sel.appendChild(o); });
+        if (d.matches.length===1) { sel.value=d.matches[0].file; loadMatch(d.matches[0].file); }
+        else document.getElementById('app').innerHTML='<div class="loading">Select a match above</div>';
+    } catch(e) { document.getElementById('app').innerHTML='<div class="loading">Error loading matches.json</div>'; }
 }
 
 async function loadMatch(file) {
     if (!file) return;
-    document.getElementById('app').innerHTML = '<div class="loading">Loading...</div>';
-    // Destroy old charts
-    charts.forEach(c => c.destroy());
-    charts = [];
-    try {
-        const r = await fetch(file);
-        S = await r.json();
-        render();
-    } catch(e) {
-        document.getElementById('app').innerHTML = `<div class="loading">Error loading ${file}</div>`;
-    }
+    document.getElementById('app').innerHTML='<div class="loading">Loading...</div>';
+    charts.forEach(c=>c.destroy()); charts=[];
+    try { const r=await fetch(file); S=await r.json(); render(); }
+    catch(e) { document.getElementById('app').innerHTML=`<div class="loading">Error loading ${file}</div>`; }
 }
 
+// ═══ COURT SVG CONSTANTS ═══
+const C = { W:200, H:380, P:20 };
+const NET_Y = C.P + C.H/2;
+const SL_FAR = C.P + C.H*18/78;
+const SL_NEAR = NET_Y + C.H*21/78;
+const MID_X = C.P + C.W/2;
+const SVG_W = C.W + 2*C.P;
+const SVG_H = C.H + 2*C.P;
+
+function cx2s(cx) { return C.P + (cx/823)*C.W; }
+function cy2s(cy) { return C.P + (cy/2377)*C.H; }
+function ft(cm) { return (cm*CM2FT).toFixed(1); }
+
+function courtLines(showFar, showNear) {
+    let s = '';
+    const L=C.P, R=C.P+C.W, T=C.P, B=C.P+C.H;
+    if (showFar) s += `<rect x="${L}" y="${T}" width="${C.W}" height="${NET_Y-T}" fill="#1a3a1a" rx="2"/>`;
+    if (showNear) s += `<rect x="${L}" y="${NET_Y}" width="${C.W}" height="${B-NET_Y}" fill="#1a3a1a" rx="2"/>`;
+    s += `<rect x="${L}" y="${T}" width="${C.W}" height="${C.H}" fill="none" stroke="#2a5a2a" stroke-width="1.5" rx="2"/>`;
+    s += `<line x1="${L}" y1="${NET_Y}" x2="${R}" y2="${NET_Y}" stroke="#fff" stroke-width="2.5"/>`;
+    s += `<text x="${MID_X}" y="${NET_Y-3}" fill="#fff" font-size="8" text-anchor="middle" opacity="0.5">NET</text>`;
+    if (showFar) {
+        s += `<line x1="${L}" y1="${SL_FAR}" x2="${R}" y2="${SL_FAR}" stroke="#fff" stroke-width="0.5" opacity="0.5"/>`;
+        s += `<line x1="${MID_X}" y1="${T}" x2="${MID_X}" y2="${NET_Y}" stroke="#fff" stroke-width="0.5" opacity="0.4"/>`;
+    }
+    if (showNear) {
+        s += `<line x1="${L}" y1="${SL_NEAR}" x2="${R}" y2="${SL_NEAR}" stroke="#fff" stroke-width="0.5" opacity="0.5"/>`;
+        s += `<line x1="${MID_X}" y1="${NET_Y}" x2="${MID_X}" y2="${B}" stroke="#fff" stroke-width="0.5" opacity="0.4"/>`;
+    }
+    return s;
+}
+
+function svgOpen(w, h) { return `<svg width="${w}" height="${h}" viewBox="0 0 ${w} ${h}" xmlns="http://www.w3.org/2000/svg" style="font-family:-apple-system,sans-serif">`; }
+
+const ZONE = {
+    O1: { x: C.P+C.W*0.25, y: C.P+C.H*0.12 },
+    O2: { x: C.P+C.W*0.75, y: C.P+C.H*0.12 },
+    O3: { x: C.P+C.W*0.25, y: (SL_FAR+NET_Y)/2 },
+    O4: { x: C.P+C.W*0.75, y: (SL_FAR+NET_Y)/2 },
+};
+const SIDE = {
+    left:  { x: C.P+C.W*0.25, y: C.P+C.H*0.75 },
+    right: { x: C.P+C.W*0.75, y: C.P+C.H*0.75 },
+};
+
+// ═══ RENDER ═══
 function render() {
-    const s = S.shots, r = S.rallies, t = S.timing, mv = S.movement, sw = S.swing, pl = S.placement;
+    const s=S.shots, r=S.rallies, t=S.timing, mv=S.movement, sw=S.swing, pl=S.placement, dr=S.direction;
     let h = '';
 
-    // Match info
     h += `<div class="match-info">
         <div class="chip">Match: <b>${S.match_id}</b></div>
         <div class="chip">Duration: <b>${S.duration_sec}s</b></div>
         <div class="chip">FPS: <b>${S.fps}</b></div>
     </div>`;
 
-    // Big stats
     h += `<div class="big-stats">
         <div class="big-stat"><div class="n">${s.total_hits}</div><div class="l">Total Hits</div></div>
         <div class="big-stat"><div class="n">${s.serve_count}</div><div class="l">Serves</div></div>
@@ -126,89 +141,282 @@ function render() {
         <div class="big-stat"><div class="n">${pl.total_bounces_detected}</div><div class="l">Bounces</div></div>
     </div>`;
 
-    h += '<div class="grid">';
+    // ═══ COURT COVERAGE (single section) ═══
+    h += `<div class="section-head">Court Coverage</div><div class="section"><div class="grid">`;
 
-    // Shot Distribution
-    h += `<div class="card"><h3>Shot Distribution</h3><div class="ch"><canvas id="c1"></canvas></div></div>`;
+    if (dr && dr.total_direction_shots > 0) {
+        h += buildDirectionCourt('left', dr);
+    }
+    h += buildFullCourt(pl, mv);
+    if (dr && dr.total_direction_shots > 0) {
+        h += buildDirectionCourt('right', dr);
+    }
+    h += buildStrokesCard(s, sw, dr);
 
-    // Shot Breakdown
-    h += `<div class="card"><h3>Shot Breakdown</h3>`;
-    Object.entries(s.counts).forEach(([k,v]) => {
-        h += `<div class="sr"><span class="sl">${k}</span><span class="sv">${v} <small style="color:#666">(${s.distribution_pct[k]||0}%)</small></span></div>`;
-    });
-    h += `<div class="sr"><span class="sl">FH/BH Ratio</span><span class="sv o">${s.fh_bh_ratio}</span></div></div>`;
+    h += `</div></div>`;
 
-    // Bounce Zones
-    const zc = pl.zone_counts, mx = Math.max(...Object.values(zc),1);
-    h += `<div class="card"><h3>Bounce Placement</h3><div class="zones">`;
-    [1,2,3,4].forEach(z => {
-        const a = Math.round((zc[z]||0)/mx*200);
-        h += `<div class="zone" style="background:rgba(249,115,22,${a/255})"><span class="v">${zc[z]||0}</span><span class="zl">Zone ${z}</span></div>`;
-    });
-    h += `</div>
-        <div class="sr"><span class="sl">Deep (Z1-2)</span><span class="sv g">${pl.deep_vs_short.deep}</span></div>
-        <div class="sr"><span class="sl">Short (Z3-4)</span><span class="sv b">${pl.deep_vs_short.short}</span></div>
-        <div class="sr"><span class="sl">Left</span><span class="sv">${pl.left_vs_right.left}</span></div>
-        <div class="sr"><span class="sl">Right</span><span class="sv">${pl.left_vs_right.right}</span></div>
-    </div>`;
+    // ═══ MATCH FLOW ═══
+    h += `<div class="section-head">Match Flow</div><div class="section"><div class="grid">`;
 
-    // Rally Stats
     h += `<div class="card"><h3>Rally Stats</h3>
         <div class="sr"><span class="sl">Rallies</span><span class="sv o">${r.rally_count}</span></div>
         <div class="sr"><span class="sl">Avg Shots/Rally</span><span class="sv">${r.avg_shots_per_rally}</span></div>
         <div class="sr"><span class="sl">Longest Rally</span><span class="sv g">${r.max_rally_length} shots</span></div>
         <div class="sr"><span class="sl">Avg Duration</span><span class="sv">${r.avg_rally_duration_sec}s</span></div>
-        <div class="ch" style="height:160px"><canvas id="c2"></canvas></div>
+        <div style="position:relative;height:150px;margin-top:8px"><canvas id="c2"></canvas></div>
     </div>`;
 
-    // Timing
     h += `<div class="card"><h3>Timing</h3>
-        <div class="sr"><span class="sl">Avg Hit→Bounce</span><span class="sv o">${t.avg_hit_to_bounce_sec}s</span></div>
+        <div class="sr"><span class="sl">Avg Hit to Bounce</span><span class="sv o">${t.avg_hit_to_bounce_sec}s</span></div>
         <div class="sr"><span class="sl">Fastest</span><span class="sv g">${t.min_hit_to_bounce_sec}s</span></div>
         <div class="sr"><span class="sl">Avg Serve Flight</span><span class="sv c">${t.avg_serve_flight_sec}s</span></div>
     </div>`;
 
-    // Swing Speed
-    h += `<div class="card"><h3>Swing Speed</h3><div class="ch"><canvas id="c3"></canvas></div></div>`;
+    h += `</div></div>`;
 
-    // Movement
-    h += `<div class="card"><h3>Court Movement</h3>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px;text-align:center">
-            <div><div style="font-size:22px;font-weight:700;color:#f97316">${mv.zone_at_hit['5']||0}</div><div class="sl">Left (Z5)</div></div>
-            <div><div style="font-size:22px;font-weight:700;color:#3b82f6">${mv.zone_at_hit['6']||0}</div><div class="sl">Right (Z6)</div></div>
-        </div>
-        ${mv.court_coverage.x_range?`
-        <div class="sr"><span class="sl">X Coverage</span><span class="sv">${mv.court_coverage.x_range}cm</span></div>
-        <div class="sr"><span class="sl">Y Coverage</span><span class="sv">${mv.court_coverage.y_range}cm</span></div>`:''}
-    </div>`;
-
-    // Player Position
-    h += `<div class="card"><h3>Player Position at Hit</h3><div class="ch" style="height:260px"><canvas id="c4"></canvas></div></div>`;
-
-    h += '</div>';
     document.getElementById('app').innerHTML = h;
 
-    // Charts
-    const clr = {forehand:'#f97316',backhand:'#3b82f6',serve:'#22c55e',overhead:'#ef4444',unknown:'#6b7280'};
+    // ═══ Charts ═══
+    charts.push(new Chart('c_donut',{type:'doughnut',data:{labels:Object.keys(s.counts),datasets:[{data:Object.values(s.counts),backgroundColor:Object.keys(s.counts).map(k=>CLR[k]||'#666'),borderWidth:0}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{color:'#aaa',font:{size:10},padding:8}}}}}));
 
-    // C1: Doughnut
-    charts.push(new Chart('c1',{type:'doughnut',data:{labels:Object.keys(s.counts),datasets:[{data:Object.values(s.counts),backgroundColor:Object.keys(s.counts).map(k=>clr[k]||'#666'),borderWidth:0}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{color:'#aaa',font:{size:11}}}}}}));
-
-    // C2: Rally bar
-    if(r.rally_lengths){charts.push(new Chart('c2',{type:'bar',data:{labels:r.rally_lengths.map((_,i)=>`R${i+1}`),datasets:[{data:r.rally_lengths,backgroundColor:'#f97316',borderRadius:4}]},options:{responsive:true,maintainAspectRatio:false,scales:{y:{ticks:{color:'#555'},grid:{color:'#1a1d2e'}},x:{ticks:{color:'#555'},grid:{display:false}}},plugins:{legend:{display:false}}}}));}
-
-    // C3: Swing bar
     const st2=Object.keys(sw.avg_swing_speed_by_type);
-    charts.push(new Chart('c3',{type:'bar',data:{labels:st2,datasets:[{label:'Avg',data:st2.map(t2=>sw.avg_swing_speed_by_type[t2]),backgroundColor:'#3b82f6',borderRadius:4},{label:'Max',data:st2.map(t2=>sw.max_swing_speed_by_type[t2]),backgroundColor:'#f97316',borderRadius:4}]},options:{responsive:true,maintainAspectRatio:false,scales:{y:{ticks:{color:'#555'},grid:{color:'#1a1d2e'},title:{display:true,text:'px/frame',color:'#555'}},x:{ticks:{color:'#555'},grid:{display:false}}},plugins:{legend:{labels:{color:'#aaa'}}}}}));
+    charts.push(new Chart('c_swing',{type:'bar',data:{labels:st2,datasets:[{label:'Avg',data:st2.map(t2=>sw.avg_swing_speed_by_type[t2]),backgroundColor:'#3b82f6',borderRadius:3},{label:'Max',data:st2.map(t2=>sw.max_swing_speed_by_type[t2]),backgroundColor:'#f97316',borderRadius:3}]},options:{responsive:true,maintainAspectRatio:false,scales:{y:{ticks:{color:'#555',font:{size:9}},grid:{color:'#1a1d2e'}},x:{ticks:{color:'#555',font:{size:9}},grid:{display:false}}},plugins:{legend:{labels:{color:'#aaa',font:{size:9}}}}}}));
 
-    // C4: Position scatter
-    if(mv.hit_positions){
-        const bt={};
-        mv.hit_positions.forEach(p=>{if(!bt[p.shot])bt[p.shot]=[];bt[p.shot].push({x:p.cx,y:p.cy})});
-        const ds=Object.entries(bt).map(([k,v])=>({label:k,data:v,backgroundColor:clr[k]||'#666',pointRadius:6}));
-        if(mv.recovery_positions.length)ds.push({label:'Recovery',data:mv.recovery_positions.map(p=>({x:p.cx,y:p.cy})),backgroundColor:'#22c55e33',pointRadius:4});
-        charts.push(new Chart('c4',{type:'scatter',data:{datasets:ds},options:{responsive:true,maintainAspectRatio:false,scales:{x:{min:0,max:823,ticks:{color:'#555'},grid:{color:'#1a1d2e'}},y:{min:1188,max:2777,ticks:{color:'#555'},grid:{color:'#1a1d2e'}}},plugins:{legend:{labels:{color:'#aaa'}}}}}));
+    if(r.rally_lengths){charts.push(new Chart('c2',{type:'bar',data:{labels:r.rally_lengths.map((_,i)=>`R${i+1}`),datasets:[{data:r.rally_lengths,backgroundColor:'#f97316',borderRadius:4}]},options:{responsive:true,maintainAspectRatio:false,scales:{y:{ticks:{color:'#555'},grid:{color:'#1a1d2e'}},x:{ticks:{color:'#555'},grid:{display:false}}},plugins:{legend:{display:false}}}}));}
+}
+
+// ═══ STROKES CARD (doughnut + counts + swing) ═══
+function buildStrokesCard(s, sw, dr) {
+    let h = `<div class="card"><h3>Strokes</h3>`;
+
+    // Doughnut
+    h += `<div style="position:relative;height:160px"><canvas id="c_donut"></canvas></div>`;
+
+    // Counts
+    Object.entries(s.counts).forEach(([k,v]) => {
+        h += `<div class="sr"><span class="sl">${k}</span><span class="sv">${v} <small style="color:#666">(${s.distribution_pct[k]||0}%)</small></span></div>`;
+    });
+    h += `<div class="sr"><span class="sl">FH/BH Ratio</span><span class="sv o">${s.fh_bh_ratio}</span></div>`;
+
+    // Swing speed
+    h += `<div style="margin-top:10px;border-top:1px solid #2a2d3e;padding-top:8px">`;
+    h += `<div style="font-size:10px;color:#555;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">Swing Speed</div>`;
+    h += `<div style="position:relative;height:130px"><canvas id="c_swing"></canvas></div>`;
+    h += `</div>`;
+
+    // Direction by shot type (if available)
+    if (dr && dr.by_shot_type) {
+        const types2 = Object.keys(dr.by_shot_type).filter(k=>k!=='unknown'&&k!=='serve');
+        if (types2.length > 0) {
+            h += `<div style="margin-top:8px;border-top:1px solid #2a2d3e;padding-top:8px">`;
+            h += `<div style="font-size:10px;color:#555;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">Direction by Shot</div>`;
+            types2.forEach(st => {
+                const d2 = dr.by_shot_type[st];
+                const tot2 = d2.cross_court + d2.down_the_line;
+                if (tot2 === 0) return;
+                const ccW = Math.max(d2.cross_court/tot2*100, 8);
+                h += `<div style="font-size:11px;color:#aab;margin:4px 0 2px;text-transform:capitalize">${st}</div>
+                    <div style="display:flex;height:18px;border-radius:4px;overflow:hidden;margin-bottom:2px">
+                        <div style="width:${ccW}%;background:${CC_CLR};display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;color:#fff;min-width:30px">CC ${d2.cross_court}</div>
+                        <div style="width:${100-ccW}%;background:${DTL_CLR};display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;color:#fff;min-width:30px">DTL ${d2.down_the_line}</div>
+                    </div>`;
+            });
+            h += `</div>`;
+        }
     }
+
+    h += `</div>`;
+    return h;
+}
+
+// ═══ FULL COURT MAP ═══
+function buildFullCourt(pl, mv) {
+    const zc = pl.zone_counts;
+    const mx = Math.max(...Object.values(zc), 1);
+    const zah = mv.zone_at_hit;
+
+    // Extended SVG: court + gap + P5/P6 strip below
+    const GAP = 8;
+    const P56_H = 50;
+    const totalH = SVG_H + GAP + P56_H + 10;
+
+    let svg = svgOpen(SVG_W, totalH);
+    svg += courtLines(true, true);
+
+    // Ft ticks
+    for (let f=0; f<=27; f+=9) {
+        svg += `<text x="${cx2s(f*30.48)}" y="${C.P+C.H+16}" fill="#555" font-size="8" text-anchor="middle">${f}ft</text>`;
+    }
+
+    // Far court: O1-O4 heatmap
+    const farZones = [
+        { z:1, x:C.P,   y:C.P,    w:C.W/2, h:SL_FAR-C.P,  label:'O1' },
+        { z:2, x:MID_X, y:C.P,    w:C.W/2, h:SL_FAR-C.P,  label:'O2' },
+        { z:3, x:C.P,   y:SL_FAR, w:C.W/2, h:NET_Y-SL_FAR, label:'O3' },
+        { z:4, x:MID_X, y:SL_FAR, w:C.W/2, h:NET_Y-SL_FAR, label:'O4' },
+    ];
+    farZones.forEach(({z, x, y, w, h: zh, label}) => {
+        const count = zc[z]||0;
+        svg += `<rect x="${x}" y="${y}" width="${w}" height="${zh}" fill="#f97316" opacity="${count/mx*0.4}" rx="1"/>`;
+        svg += `<text x="${x+w/2}" y="${y+zh/2-6}" fill="#aab" font-size="9" text-anchor="middle" font-weight="600">${label}</text>`;
+        svg += `<text x="${x+w/2}" y="${y+zh/2+10}" fill="#fff" font-size="16" text-anchor="middle" font-weight="700">${count}</text>`;
+    });
+
+    // Near court: P1-P4 inside the court (between net and near baseline)
+    const nearMax = Math.max(zah['P1']||0, zah['P2']||0, zah['P3']||0, zah['P4']||0, 1);
+    const nearZones = [
+        { z:'P1', x:C.P,   y:NET_Y,   w:C.W/2, h:SL_NEAR-NET_Y, label:'P1', clr:'#22c55e' },
+        { z:'P2', x:MID_X, y:NET_Y,   w:C.W/2, h:SL_NEAR-NET_Y, label:'P2', clr:'#22c55e' },
+        { z:'P3', x:C.P,   y:SL_NEAR, w:C.W/2, h:C.P+C.H-SL_NEAR, label:'P3', clr:'#06b6d4' },
+        { z:'P4', x:MID_X, y:SL_NEAR, w:C.W/2, h:C.P+C.H-SL_NEAR, label:'P4', clr:'#06b6d4' },
+    ];
+    nearZones.forEach(({z, x, y, w, h: zh, label, clr}) => {
+        const count = zah[z]||0;
+        svg += `<rect x="${x}" y="${y}" width="${w}" height="${zh}" fill="${clr}" opacity="${count/nearMax*0.3}" rx="1"/>`;
+        svg += `<text x="${x+w/2}" y="${y+zh/2-5}" fill="#aab" font-size="8" text-anchor="middle" font-weight="600">${label}</text>`;
+        svg += `<text x="${x+w/2}" y="${y+zh/2+9}" fill="#fff" font-size="14" text-anchor="middle" font-weight="700">${count}</text>`;
+    });
+
+    // P5/P6: separate rectangle below baseline with gap
+    const p5y = C.P + C.H + GAP;
+    const p5 = zah['P5']||0, p6 = zah['P6']||0;
+    const p56Max = Math.max(p5, p6, 1);
+    // P5/P6 background
+    svg += `<rect x="${C.P}" y="${p5y}" width="${C.W}" height="${P56_H}" fill="#1a3a1a" stroke="#2a5a2a" stroke-width="1" rx="3"/>`;
+    svg += `<line x1="${MID_X}" y1="${p5y}" x2="${MID_X}" y2="${p5y+P56_H}" stroke="#fff" stroke-width="0.5" opacity="0.3"/>`;
+    // P5 fill
+    svg += `<rect x="${C.P}" y="${p5y}" width="${C.W/2}" height="${P56_H}" fill="#f97316" opacity="${p5/p56Max*0.35}" rx="3"/>`;
+    svg += `<text x="${C.P+C.W*0.25}" y="${p5y+P56_H*0.4}" fill="#aab" font-size="8" text-anchor="middle" font-weight="600">P5</text>`;
+    svg += `<text x="${C.P+C.W*0.25}" y="${p5y+P56_H*0.4+14}" fill="#f97316" font-size="14" text-anchor="middle" font-weight="700">${p5}</text>`;
+    // P6 fill
+    svg += `<rect x="${MID_X}" y="${p5y}" width="${C.W/2}" height="${P56_H}" fill="#3b82f6" opacity="${p6/p56Max*0.35}" rx="3"/>`;
+    svg += `<text x="${C.P+C.W*0.75}" y="${p5y+P56_H*0.4}" fill="#aab" font-size="8" text-anchor="middle" font-weight="600">P6</text>`;
+    svg += `<text x="${C.P+C.W*0.75}" y="${p5y+P56_H*0.4+14}" fill="#3b82f6" font-size="14" text-anchor="middle" font-weight="700">${p6}</text>`;
+
+    // Player position dots (on top of everything)
+    if (mv.hit_positions) {
+        mv.hit_positions.forEach(p => {
+            // Map cy: positions beyond baseline go into P5/P6 strip
+            let dotY = cy2s(p.cy);
+            if (dotY > C.P + C.H) {
+                dotY = p5y + (dotY - C.P - C.H) * 0.5 + 10; // compress into strip
+            }
+            svg += `<circle cx="${cx2s(p.cx)}" cy="${dotY}" r="4.5" fill="${CLR[p.shot]||'#666'}" opacity="0.8" stroke="#000" stroke-width="0.4"/>`;
+        });
+    }
+
+    svg += '</svg>';
+
+    const types = mv.hit_positions ? [...new Set(mv.hit_positions.map(p=>p.shot))] : [];
+    let leg = '<div class="legend-row">';
+    types.forEach(t => { leg += `<span><span class="legend-dot" style="background:${CLR[t]||'#666'}"></span>${t}</span>`; });
+    leg += '</div>';
+
+    let stats = `<div style="display:flex;gap:8px;margin-top:6px;justify-content:center">
+        <div style="text-align:center;background:#151722;padding:4px 14px;border-radius:4px">
+            <div style="font-size:14px;font-weight:700;color:#22c55e">${pl.deep_vs_short.deep}</div><div style="font-size:8px;color:#666">Deep</div>
+        </div>
+        <div style="text-align:center;background:#151722;padding:4px 14px;border-radius:4px">
+            <div style="font-size:14px;font-weight:700;color:#3b82f6">${pl.deep_vs_short.short}</div><div style="font-size:8px;color:#666">Short</div>
+        </div>
+    </div>`;
+
+    let cov = '';
+    if (mv.court_coverage && mv.court_coverage.x_range) {
+        cov = `<div style="display:flex;gap:12px;justify-content:center;margin-top:4px;font-size:11px;color:#666">
+            <span>Lateral: <b style="color:#aab">${ft(mv.court_coverage.x_range)} ft</b></span>
+            <span>Depth: <b style="color:#aab">${ft(mv.court_coverage.y_range)} ft</b></span>
+        </div>`;
+    }
+
+    return `<div class="card"><h3>Court Map</h3><div class="court-wrap">${svg}</div>${leg}${stats}${cov}</div>`;
+}
+
+// ═══ DIRECTION COURT (From Left / From Right) ═══
+function buildDirectionCourt(side, dr) {
+    const sz = dr.side_to_zone[side];
+    const totalSide = Object.values(sz).reduce((a,b)=>a+b, 0);
+    if (totalSide === 0) return `<div class="card"><h3>From ${side} side</h3><div style="color:#555;text-align:center;padding:20px">No shots</div></div>`;
+
+    const maxC = Math.max(...Object.values(sz), 1);
+    const isLeft = side === 'left';
+
+    let svg = svgOpen(SVG_W, SVG_H);
+    svg += courtLines(true, true);
+
+    // Highlight player side
+    svg += `<rect x="${isLeft ? C.P : MID_X}" y="${NET_Y}" width="${C.W/2}" height="${C.P+C.H-NET_Y}" fill="#fff" opacity="0.06" rx="1"/>`;
+
+    const from = SIDE[side];
+    svg += `<circle cx="${from.x}" cy="${from.y}" r="10" fill="#fff" opacity="0.15"/>`;
+    svg += `<text x="${from.x}" y="${from.y+4}" fill="#fff" font-size="11" text-anchor="middle" font-weight="700">${totalSide}</text>`;
+    svg += `<text x="${from.x}" y="${from.y+22}" fill="#aab" font-size="9" text-anchor="middle">${side.toUpperCase()}</text>`;
+
+    svg += `<defs>
+        <marker id="ac_${side}" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0,0 8,3 0,6" fill="${CC_CLR}"/></marker>
+        <marker id="ad_${side}" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0,0 8,3 0,6" fill="${DTL_CLR}"/></marker>
+    </defs>`;
+
+    // Separate CC and DTL arrows — start from OPPOSITE edges so they don't cross
+    // CC starts from the cross-court edge of player, DTL from the same-side edge
+    const ccStartX = isLeft ? from.x + 12 : from.x - 12;  // CC starts toward opposite side
+    const dtlStartX = isLeft ? from.x - 8 : from.x + 8;   // DTL starts toward same side
+
+    ['O1','O2','O3','O4'].forEach(zone => {
+        const count = sz[zone] || 0;
+        if (count === 0) return;
+        const to = ZONE[zone];
+        const bounceLeft = (zone === 'O1' || zone === 'O3');
+        const isCC = (isLeft && !bounceLeft) || (!isLeft && bounceLeft);
+        const clr = isCC ? CC_CLR : DTL_CLR;
+        const sw2 = Math.max(2, Math.min(7, (count/maxC)*7));
+        const opacity = Math.max(0.5, count/maxC);
+        const mid = isCC ? `ac_${side}` : `ad_${side}`;
+
+        const isDeep = (zone === 'O1' || zone === 'O2');
+        const startX = isCC ? ccStartX : dtlStartX;
+        const startY = from.y - 12;
+
+        // CC: curve toward opposite side; DTL: slight curve staying on same side
+        let cpx, cpy;
+        if (isCC) {
+            // Diagonal curve crossing the court
+            const crossDir = isLeft ? 1 : -1;
+            cpx = (startX + to.x)/2 + crossDir * (isDeep ? 20 : 12);
+            cpy = (startY + to.y)/2 - 10;
+        } else {
+            // Nearly straight, slight inward curve
+            const inDir = isLeft ? -1 : 1;
+            cpx = (startX + to.x)/2 + inDir * (isDeep ? 10 : 5);
+            cpy = (startY + to.y)/2 + (isDeep ? -15 : 5);
+        }
+
+        svg += `<path d="M${startX},${startY} Q${cpx},${cpy} ${to.x},${to.y+10}" fill="none" stroke="${clr}" stroke-width="${sw2}" opacity="${opacity}" marker-end="url(#${mid})"/>`;
+        svg += `<text x="${to.x}" y="${to.y+5}" fill="#fff" font-size="16" text-anchor="middle" font-weight="700">${count}</text>`;
+        svg += `<text x="${to.x}" y="${to.y-8}" fill="#aab" font-size="9" text-anchor="middle">${zone}</text>`;
+    });
+
+    svg += '</svg>';
+
+    const leg = `<div class="legend-row">
+        <span><span class="legend-dot" style="background:${CC_CLR}"></span>Cross-court</span>
+        <span><span class="legend-dot" style="background:${DTL_CLR}"></span>Down-the-line</span>
+    </div>`;
+
+    // CC/DTL summary below arrows
+    const ccCount = (isLeft ? (sz.O2||0)+(sz.O4||0) : (sz.O1||0)+(sz.O3||0));
+    const dtlCount = totalSide - ccCount;
+    const ccPct = totalSide > 0 ? Math.round(ccCount/totalSide*100) : 0;
+
+    let bar = '';
+    if (totalSide > 0) {
+        bar = `<div style="display:flex;height:20px;border-radius:4px;overflow:hidden;margin-top:4px">
+            <div style="width:${Math.max(ccPct,10)}%;background:${CC_CLR};display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;color:#fff;min-width:28px">CC ${ccCount}</div>
+            <div style="width:${Math.max(100-ccPct,10)}%;background:${DTL_CLR};display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;color:#fff;min-width:28px">DTL ${dtlCount}</div>
+        </div>`;
+    }
+
+    return `<div class="card"><h3>From ${side} side</h3><div class="court-wrap">${svg}</div>${leg}${bar}</div>`;
 }
 
 init();
