@@ -418,5 +418,112 @@
         }
       }
     }
-  }
+  },
+  "trajectories": [
+    {
+      "hit_cx": 520.4,
+      "hit_cy": 1398.8,
+      "bounce_cx": 359.4,
+      "bounce_cy": 1129.5,
+      "shot": "serve"
+    },
+    {
+      "hit_cx": 466.4,
+      "hit_cy": 2205.3,
+      "bounce_cx": 124.3,
+      "bounce_cy": -442.0,
+      "shot": "forehand"
+    },
+    {
+      "hit_cx": 94.1,
+      "hit_cy": 2209.7,
+      "bounce_cx": 698.0,
+      "bounce_cy": 382.2,
+      "shot": "backhand"
+    },
+    {
+      "hit_cx": 194.2,
+      "hit_cy": 2080.5,
+      "bounce_cx": 159.6,
+      "bounce_cy": -603.0,
+      "shot": "forehand"
+    },
+    {
+      "hit_cx": 148.9,
+      "hit_cy": 1418.8,
+      "bounce_cx": 343.7,
+      "bounce_cy": 678.1,
+      "shot": "serve"
+    },
+    {
+      "hit_cx": 136.8,
+      "hit_cy": 1601.8,
+      "bounce_cx": 638.1,
+      "bounce_cy": 642.4,
+      "shot": "backhand"
+    },
+    {
+      "hit_cx": 641.8,
+      "hit_cy": 1340.7,
+      "bounce_cx": 559.4,
+      "bounce_cy": 299.2,
+      "shot": "serve"
+    },
+    {
+      "hit_cx": 341.1,
+      "hit_cy": 2060.6,
+      "bounce_cx": -66.6,
+      "bounce_cy": -443.7,
+      "shot": "forehand"
+    },
+    {
+      "hit_cx": 548.2,
+      "hit_cy": 1506.0,
+      "bounce_cx": 288.4,
+      "bounce_cy": 838.4,
+      "shot": "serve"
+    },
+    {
+      "hit_cx": 533.7,
+      "hit_cy": 1528.5,
+      "bounce_cx": 301.6,
+      "bounce_cy": 807.6,
+      "shot": "serve"
+    },
+    {
+      "hit_cx": 572.9,
+      "hit_cy": 2273.5,
+      "bounce_cx": 216.9,
+      "bounce_cy": 258.7,
+      "shot": "forehand"
+    },
+    {
+      "hit_cx": 119.8,
+      "hit_cy": 1456.5,
+      "bounce_cx": 526.9,
+      "bounce_cy": -865.5,
+      "shot": "serve"
+    },
+    {
+      "hit_cx": 84.0,
+      "hit_cy": 2028.3,
+      "bounce_cx": 290.5,
+      "bounce_cy": 660.4,
+      "shot": "backhand"
+    },
+    {
+      "hit_cx": 652.5,
+      "hit_cy": 2250.4,
+      "bounce_cx": 1128.8,
+      "bounce_cy": 810.0,
+      "shot": "forehand"
+    },
+    {
+      "hit_cx": 349.3,
+      "hit_cy": 1822.8,
+      "bounce_cx": 316.5,
+      "bounce_cy": 190.2,
+      "shot": "backhand"
+    }
+  ]
 }
