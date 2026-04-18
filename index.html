@@ -144,13 +144,6 @@ async function render() {
     </div>`;
 
     const deepPct = pl.total_bounces_detected>0 ? Math.round(pl.deep_vs_short.deep/pl.total_bounces_detected*100) : 0;
-    const rallyEffPct = r.max_rally_length>0 ? Math.round(r.avg_shots_per_rally/r.max_rally_length*100) : 0;
-    h += `<div class="big-stats">
-        <div class="big-stat"><div class="n">${s.distribution_pct.serve||0}%</div><div class="l">Serve Rate</div></div>
-        <div class="big-stat"><div class="n">${s.distribution_pct.forehand||0}%</div><div class="l">Forehand Rate</div></div>
-        <div class="big-stat"><div class="n">${deepPct}%</div><div class="l">Deep Placement</div></div>
-        <div class="big-stat"><div class="n">${rallyEffPct}%</div><div class="l">Rally Consistency</div></div>
-    </div>`;
 
     // ═══ COURT COVERAGE (single section) ═══
     h += `<div class="section-head">Court Coverage</div><div class="section"><div class="grid">`;
@@ -293,8 +286,8 @@ function buildFullCourt(pl, mv) {
         const count = zah[z]||0;
         svg += `<rect x="${x}" y="${y}" width="${w}" height="${zh}" fill="${clr}" opacity="${count/nearMax*0.3}" rx="1"/>`;
         svg += `<text x="${x+w/2}" y="${y+zh/2-5}" fill="#aab" font-size="8" text-anchor="middle" font-weight="600">${label}</text>`;
-        const nearTotal = (zah['P1']||0)+(zah['P2']||0)+(zah['P3']||0)+(zah['P4']||0);
-        const nPct = nearTotal>0 ? Math.round(count/nearTotal*100) : 0;
+        const allZoneTotal = (zah['P1']||0)+(zah['P2']||0)+(zah['P3']||0)+(zah['P4']||0)+(zah['P5']||0)+(zah['P6']||0);
+        const nPct = allZoneTotal>0 ? Math.round(count/allZoneTotal*100) : 0;
         svg += `<text x="${x+w/2}" y="${y+zh/2+9}" fill="#fff" font-size="12" text-anchor="middle" font-weight="700">${nPct}%</text>`;
     });
 
@@ -308,7 +301,7 @@ function buildFullCourt(pl, mv) {
     // P5 fill
     svg += `<rect x="${C.P}" y="${p5y}" width="${C.W/2}" height="${P56_H}" fill="#f97316" opacity="${p5/p56Max*0.35}" rx="3"/>`;
     svg += `<text x="${C.P+C.W*0.25}" y="${p5y+P56_H*0.4}" fill="#aab" font-size="8" text-anchor="middle" font-weight="600">P5</text>`;
-    const p56Total=p5+p6||1;
+    const p56Total=(zah['P1']||0)+(zah['P2']||0)+(zah['P3']||0)+(zah['P4']||0)+p5+p6||1;
     svg += `<text x="${C.P+C.W*0.25}" y="${p5y+P56_H*0.4+14}" fill="#f97316" font-size="12" text-anchor="middle" font-weight="700">${Math.round(p5/p56Total*100)}%</text>`;
     // P6 fill
     svg += `<rect x="${MID_X}" y="${p5y}" width="${C.W/2}" height="${P56_H}" fill="#3b82f6" opacity="${p6/p56Max*0.35}" rx="3"/>`;
@@ -340,21 +333,20 @@ function buildFullCourt(pl, mv) {
     }
     */
 
-    // Player position dots (on top of everything)
-    if (mv.hit_positions) {
-        mv.hit_positions.forEach(p => {
-            // Map cy: positions beyond baseline go into P5/P6 strip
-            let dotY = cy2s(p.cy);
-            if (dotY > C.P + C.H) {
-                dotY = p5y + (dotY - C.P - C.H) * 0.5 + 10; // compress into strip
-            }
-            svg += `<circle cx="${cx2s(p.cx)}" cy="${dotY}" r="4.5" fill="${CLR[p.shot]||'#666'}" opacity="0.8" stroke="#000" stroke-width="0.4"/>`;
+    // Bounce landing dots (color coded by shot type)
+    if (S.trajectories) {
+        S.trajectories.forEach(t => {
+            let bx = cx2s(t.bounce_cx), by = cy2s(t.bounce_cy);
+            bx = Math.max(C.P+2, Math.min(C.P+C.W-2, bx));
+            by = Math.max(C.P+2, Math.min(C.P+C.H-2, by));
+            const clr = CLR[t.shot] || '#666';
+            svg += `<circle cx="${bx.toFixed(1)}" cy="${by.toFixed(1)}" r="4.5" fill="${clr}" opacity="0.8" stroke="#000" stroke-width="0.4"/>`;
         });
     }
 
     svg += '</svg>';
 
-    const types = mv.hit_positions ? [...new Set(mv.hit_positions.map(p=>p.shot))] : [];
+    const types = S.trajectories ? [...new Set(S.trajectories.map(t=>t.shot))] : (mv.hit_positions ? [...new Set(mv.hit_positions.map(p=>p.shot))] : []);
     let leg = '<div class="legend-row">';
     types.forEach(t => { leg += `<span><span class="legend-dot" style="background:${CLR[t]||'#666'}"></span>${t}</span>`; });
     leg += '</div>';
@@ -538,6 +530,9 @@ function pgDrawInspect(){
         ctx.beginPath();ctx.arc(x,y,3.5,0,Math.PI*2);ctx.fill();
     }
     ctx.globalAlpha=1;
+    // Pink circle on right wrist in inspect
+    const rw=PG_EASE.right_wrist;
+    if(rw){ctx.strokeStyle='#ec4899';ctx.lineWidth=2;ctx.globalAlpha=0.8;ctx.beginPath();ctx.arc(rw[0]+PG_ICX,rw[1]+PG_ICY,8,0,Math.PI*2);ctx.stroke();ctx.globalAlpha=1;}
     ctx.fillStyle='#6366f1';ctx.font='bold 12px -apple-system,sans-serif';ctx.textAlign='center';
     ctx.fillText('Inspect',PG_ICX,22);
     ctx.fillStyle='#444';ctx.font='9px -apple-system,sans-serif';
@@ -640,6 +635,10 @@ function pgDrawFrame(){
 
     if(gKp)pgDrawSkeleton(gCtx,gKp,'#2563eb',3);
     if(pFrame)pgDrawDevSkeleton(pCtx,pFrame,Date.now()/1000);
+
+    // Pink circle on right wrist (dominant hand marker)
+    if(gKp&&gKp.right_wrist){gCtx.strokeStyle='#ec4899';gCtx.lineWidth=2;gCtx.globalAlpha=0.8;gCtx.beginPath();gCtx.arc(gKp.right_wrist[0],gKp.right_wrist[1],8,0,Math.PI*2);gCtx.stroke();gCtx.globalAlpha=1;}
+    if(pFrame&&pFrame.kp&&pFrame.kp.right_wrist){pCtx.strokeStyle='#ec4899';pCtx.lineWidth=2;pCtx.globalAlpha=0.8;pCtx.beginPath();pCtx.arc(pFrame.kp.right_wrist[0],pFrame.kp.right_wrist[1],8,0,Math.PI*2);pCtx.stroke();pCtx.globalAlpha=1;}
 
     const rel=idx+D.frame_range[0];
     const phase=rel<-5?'PREPARATION':rel<=5?'CONTACT':'FOLLOW-THROUGH';
